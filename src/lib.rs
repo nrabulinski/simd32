@@ -31,8 +31,8 @@ macro_rules! decode_func {
 }
 
 decode_func!(
-    //decode_len_64: 64,
-    //decode_len_32: 32,
+    decode_len_64: 64,
+    decode_len_32: 32,
     decode_len_16: 16
 );
 
@@ -61,7 +61,7 @@ pub fn decode(input: &[u8]) -> Vec<u8> {
     } as usize;
     let len = (input.len() - pad_len) * 5 / 8;
     let mut out = vec![0u8; input.len() / 8 * 5];
-    const DATA_CHUNK: usize = 1024 * 3;
+    const DATA_CHUNK: usize = 1024 * 10;
     const OUT_CHUNK: usize = DATA_CHUNK / 8 * 5;
     if input.len() >= DATA_CHUNK {
         input.par_chunks(DATA_CHUNK).zip(out.par_chunks_mut(OUT_CHUNK)).for_each(|(input, output)| {
@@ -82,17 +82,17 @@ fn decode_internal(input: &[u8], output: &mut [u8]) {
         let input = &input[i_i..];
         let output = &mut output[o_i..];
         match input.len() {
-            //65.. => {
-            //    decode_len_64(input, output);
-            //    i_i += 64; o_i += 40;
-            //},
-            //64 => return decode_len_64(input, output),
-            //33.. => {
-            //    decode_len_32(input, output);
-            //    i_i += 32; o_i += 20;
-            //},
-            //32 => return decode_len_32(input, output),
-            17.. => {
+            65.. => {
+                decode_len_64(input, output);
+                i_i += 64; o_i += 40;
+            },
+            64 => return decode_len_64(input, output),
+            33..=63 => {
+                decode_len_32(input, output);
+                i_i += 32; o_i += 20;
+            },
+            32 => return decode_len_32(input, output),
+            17..=31 => {
                 decode_len_16(input, output);
                 i_i += 16; o_i += 10;
             },
